@@ -1,0 +1,356 @@
+// 移行データ一覧の入力値のデータチェックを実施するプログラム
+function main(){
+  // 入力チェック
+  var hissuArray = inputCheck()
+  var hissuStr = "該当の箇所が未入力となっております。"
+  
+  // 条件付き必須チェック(マスタ/トラン/設定)
+  var hissuConditionsArray = inputConditionsCheck()
+  var hissuConditionsStr = "条件付き必須の箇所が未入力となっております。"
+  
+  // 移行データIDチェック
+  var ikoDataIdArray = integrityCheck()
+  var ikoDataIdStr = "移行データIDが不整合です。移行データID一覧、もしくは設定データIDに入力を行ってください。"
+  var array = [[hissuStr, hissuArray, 0],
+               [hissuConditionsStr, hissuConditionsArray, 0],
+               [ikoDataIdStr, ikoDataIdArray, 1]]
+  
+  // エラー出力
+  errorOutput(array)
+  
+  // 処理終了
+  Browser.msgBox("処理終了", Browser.Buttons.OK_CANCEL);
+  
+               
+}
+
+// 必須チェックを行う関数
+function inputCheck(){
+  // 必須チェックを行う対象エリア(最終行)を特定する
+  var ash = SpreadsheetApp.getActiveSpreadsheet()
+  var sheet = ash.getSheetByName("移行データ一覧")
+  var range = sheet.getRange('B:B'); //B列を指定
+  var LastRow = range.getLastRow();
+  
+  // ヘッダー含む
+  var dataArr = sheet.getRange(1, 2, LastRow).getValues()
+  var startRow = 6 // どこまで確認するか
+  for (var i = LastRow-1; i >= startRow; i--){
+    var data = dataArr[i-1]
+    if(data != ""){
+      LastRow = i
+      break
+    }
+  }
+  
+  // 必須入力と書かれている列の位置(列番号)を配列で控える
+  var hissuCheckArray = []
+  var range2 = sheet.getRange('2:2') // 2行を指定
+  var LastColumn = range2.getLastColumn()
+  
+  var dataArr2 = sheet.getRange(2, 1, 1, LastColumn).getValues()
+  var startColumn = 2 // どこまで確認するか
+  var endStr = "e" // 最後の位置の文字列
+  for (var i = LastColumn; i >= startColumn; i--){
+    var data = dataArr2[0][i-1]
+    if(data == endStr){
+     LastColumn = i
+     break
+    }
+  }
+  
+  for(var i = 2; i<=LastColumn; i++){
+    var data = dataArr2[0][i-1]
+    if(data == "必須入力"){
+      var length = hissuCheckArray.length
+      hissuCheckArray[length] = i
+    }
+  }
+  
+  
+  // 上の行から必須入力をチェックする
+  // [A1形式, No]
+  var errorArray = []
+  // 設定移行要否
+  var setteiIkoYohi = 19
+  var setteiIkoYohiStr = "97:設定・移行対象外"
+  var setteiIkoYohiArr = sheet.getRange(1, setteiIkoYohi, LastRow).getValues()
+  // 廃止フラグ
+  var haishi = 61
+  var haishiStr = "01:Yes"
+  var haishiArr = sheet.getRange(1, haishi, LastRow).getValues()
+  // No
+  var no = 1
+  var noArr = sheet.getRange(1, no, LastRow).getValues()
+  
+  hissuCheckArray.forEach(function(item){
+    // 入力必須のデータ
+    var dataArr3 = sheet.getRange(1, item, LastRow).getValues()
+    var startRow = 6
+    for(var i=startRow; i<=LastRow; i++){
+      // チェックデータ
+      var data = dataArr3[i-1][0]
+      var setteiIkoYohiData = setteiIkoYohiArr[i-1][0]
+      var haishiData = haishiArr[i-1][0]
+      var noData = noArr[i-1][0]
+      // チェック条件対象外かどうか判定
+      if(setteiIkoYohiData == setteiIkoYohiStr || haishiData == haishiStr){
+        continue
+      }
+        
+      if(data == ""){
+        var length = errorArray.length
+        errorArray[length] = [sheet.getRange(i, item).getA1Notation(), noData]
+      }
+    }
+  });
+  
+  return errorArray;
+}
+
+// 条件付必須入力チェックを行う関数(マスタ/トラン/設定)
+function inputConditionsCheck(){
+  // 必須チェックを行う対象エリア(最終行)を特定する
+  var ash = SpreadsheetApp.getActiveSpreadsheet()
+  var sheet = ash.getSheetByName("移行データ一覧")
+  var range = sheet.getRange('B:B'); //B列を指定
+  var LastRow = range.getLastRow();
+  
+  // ヘッダー含む
+  var dataArr = sheet.getRange(1, 2, LastRow).getValues()
+  var startRow = 6 // どこまで確認するか
+  for (var i = LastRow-1; i >= startRow; i--){
+    var data = dataArr[i-1]
+    if(data != ""){
+      LastRow = i
+      break
+    }
+  }
+  
+  // 必須入力と書かれている列の位置(列番号)を配列で控える
+  var hissuCheckArray = []
+  var range2 = sheet.getRange('2:2') // 2行を指定
+  var LastColumn = range2.getLastColumn()
+  
+  var dataArr2 = sheet.getRange(2, 1, 1, LastColumn).getValues()
+  var startColumn = 2 // どこまで確認するか
+  var endStr = "e" // 最後の位置の文字列
+  for (var i = LastColumn; i >= startColumn; i--){
+    var data = dataArr2[0][i-1]
+    if(data == endStr){
+     LastColumn = i
+     break
+    }
+  }
+  
+  for(var i = 2; i<=LastColumn; i++){
+    var data = dataArr2[0][i-1]
+    if(data == "条件付必須入力"){
+      var length = hissuCheckArray.length
+      hissuCheckArray[length] = i
+    }
+  }
+  
+  // 上の行から必須入力をチェックする
+  // [A1形式, No]
+  var errorArray = []
+  // 設定移行要否
+  var setteiIkoYohi = 19
+  var setteiIkoYohiStr = "97:設定・移行対象外"
+  var setteiIkoYohiArr = sheet.getRange(1, setteiIkoYohi, LastRow).getValues()
+  // 廃止フラグ
+  var haishi = 61
+  var haishiStr = "01:Yes"
+  var haishiArr = sheet.getRange(1, haishi, LastRow).getValues()
+  // No
+  var no = 1
+  var noArr = sheet.getRange(1, no, LastRow).getValues()
+  // マスタ/トラン/設定
+  var mstTrnSettei = 8
+  var mstTrnSetteiStr = "MST（設定）"
+  var mstTrnSetteiArr = sheet.getRange(1, mstTrnSettei, LastRow).getValues()
+  
+  hissuCheckArray.forEach(function(item){
+    // 条件付き必須のデータ
+    var dataArr3 = sheet.getRange(1, item, LastRow).getValues()
+    var startRow = 6
+    for(var i=startRow; i<=LastRow; i++){
+      // チェックデータ
+      var data = dataArr3[i-1][0]
+      var setteiIkoYohiData = setteiIkoYohiArr[i-1][0]
+      var haishiData = haishiArr[i-1][0]
+      var noData = noArr[i-1][0]
+      var mstTrnSetteiData = mstTrnSetteiArr[i-1][0]
+      // チェック条件対象外かどうか判定
+      if(setteiIkoYohiData == setteiIkoYohiStr || haishiData == haishiStr || mstTrnSetteiData == mstTrnSetteiStr){
+        continue
+      }
+        
+      if(data == ""){
+        var length = errorArray.length
+        errorArray[length] = [sheet.getRange(i, item).getA1Notation(), noData]
+      }
+    }
+  });
+  
+  return errorArray;  
+}
+
+// 移行データIDの整合性を検証する関数
+function integrityCheck(){
+  var errorArray = []
+  // 処理
+  // 移行データ一覧の移行データIDの配列を作成する
+  var ikoDataArr = getIkoDataArr()
+  
+  // 移行データID一覧の移行データIDの配列を作成する
+  var ikoDataIdArr = getIkoDataIdArr()
+  
+  // 設定データID一覧の設定データIDの配列を作成する
+  var setteiDataIdArr = getSetteiDataIdArr()
+  
+  // 1で作成した移行データIDの配列から2と3に含まれていない移行データIDが存在するか検証する
+  ikoDataArr.forEach(function(data){
+    if(isNotExists(data, ikoDataIdArr, setteiDataIdArr)){
+      var length = errorArray.length
+      errorArray[length] = data
+    }
+  });
+  
+  
+  return errorArray; 
+}
+
+// 移行データ一覧の移行データIDの配列を取得する
+function getIkoDataArr(){
+  var ikoDataArr = []
+  
+  var ash = SpreadsheetApp.getActiveSpreadsheet()
+  var sheet = ash.getSheetByName("移行データ一覧")
+  var range = sheet.getRange('E:E'); //E列を指定
+  var LastRow = range.getLastRow();
+  
+  // ヘッダー含む
+  var dataArr = sheet.getRange(1, 5, LastRow).getValues()
+  var startRow = 6 // どこまで確認するか
+  for (var i = LastRow-1; i >= startRow; i--){
+    var data = dataArr[i-1]
+    if(data != ""){
+      LastRow = i
+      break
+    }
+  }
+  
+  // テスト1　最終行か
+  // Browser.msgBox(LastRow, Browser.Buttons.OK_CANCEL);
+  var startRow = 6 // どこから確認するか
+  for(var i = startRow; i<=LastRow; i++){
+    var data = dataArr[i-1][0]
+    if(data != ""){
+      var length = ikoDataArr.length
+      ikoDataArr[length] = data
+    }
+  }
+  
+  return ikoDataArr
+}
+
+// 移行データID一覧の移行データIDの配列を取得する
+function getIkoDataIdArr(){
+  var ikoDataIdArr = []
+  
+  var ash = SpreadsheetApp.getActiveSpreadsheet()
+  var sheet = ash.getSheetByName("移行データID一覧")
+  var range = sheet.getRange('F:F'); //F列を指定
+  var LastRow = range.getLastRow();
+  
+  // ヘッダー含む
+  var dataArr = sheet.getRange(1, 6, LastRow).getValues()
+  var startRow = 5 // どこから確認するか
+  for(var i = startRow; i<=LastRow; i++){
+    var data = dataArr[i-1][0]
+    if(data != ""){
+      var length = ikoDataIdArr.length
+      ikoDataIdArr[length] = data
+    }
+  }
+  
+  return ikoDataIdArr
+}
+
+// 設定データID一覧の設定データIDの配列を作成する
+function getSetteiDataIdArr(){
+  var setteiDataIdArr = []
+  
+  var ash = SpreadsheetApp.getActiveSpreadsheet()
+  var sheet = ash.getSheetByName("設定データID一覧")
+  var range = sheet.getRange('F:F'); //F列を指定
+  var LastRow = range.getLastRow();
+  
+  // ヘッダー含む
+  var dataArr = sheet.getRange(1, 6, LastRow).getValues()
+  var startRow = 5 // どこから確認するか
+  for(var i = startRow; i<=LastRow; i++){
+    var data = dataArr[i-1][0]
+    if(data != ""){
+      var length = setteiDataIdArr.length
+      setteiDataIdArr[length] = data
+    }
+  }
+  
+  return setteiDataIdArr
+}
+
+function isNotExists(data, ikoDataIdArr, setteiDataIdArr){
+  for(var i = 0; i< ikoDataIdArr.length; i++){
+    if(data == ikoDataIdArr[i]){
+      return false; 
+    }
+  }
+  for(var i = 0; i< setteiDataIdArr.length; i++){
+    if(data == setteiDataIdArr[i]){
+      return false; 
+    }
+  }
+  return true;
+}
+
+// エラー出力を行う関数
+function errorOutput(array){
+  // ※TODO 設定必要(エラーチェック表)
+  // ※TODO 必須以外の項目が来た場合は、urlが異なる可能性がある為、考慮する
+  var url = 'https://docs.google.com/spreadsheets/samplePleaseInputUrl/edit#gid=1494815720&range='
+  // 処理
+  var ash = SpreadsheetApp.getActiveSpreadsheet()
+  var sheet = ash.getSheetByName("エラーチェック表")
+  var range = sheet.getRange('A:A'); //A列を指定
+  var LastRow = range.getLastRow();
+  var range2 = sheet.getRange(5, 1, LastRow, 3)
+  
+  // データを削除
+  range2.clear()
+ 
+  // ※TODO どこから記入するかが関係あり
+  var row = 5
+  var errorDataArr = []
+  array.forEach(function(item){
+    var errorStr = item[0]
+    var errorArr = item[1]
+    var kubun = item[2]
+    if(kubun == 0){
+      // [A1形式, No]
+      errorArr.forEach(function(item2){
+        var length = errorDataArr.length
+        errorDataArr[length] = [item2[1], errorStr, url + item2[0]]
+      });
+    } else {
+      errorArr.forEach(function(item2){
+        var length = errorDataArr.length
+        errorDataArr[length] = [item2, errorStr, ""]
+      });
+    }
+    
+  });
+  sheet.getRange(row, 1, errorDataArr.length, 3).setValues(errorDataArr)
+}
+
